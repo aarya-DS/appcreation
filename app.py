@@ -2,8 +2,12 @@ import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# Page settings
+st.set_page_config(page_title="Street Food Explorer", layout="wide")
+
 # Title
-st.title("Street Food Insights App")
+st.title("🌮 Street Food Explorer")
+st.markdown("Discover global street food trends, pricing, and more.")
 
 # Load data
 @st.cache_data
@@ -12,62 +16,76 @@ def load_data():
 
 df = load_data()
 
-# Show dataset
-st.subheader("Preview of Street Food Data")
-st.dataframe(df)
+# Sidebar filters
+st.sidebar.header("🔍 Filter Options")
 
-# Show column names
-st.sidebar.title("Filters")
+# Country Filter
+countries = df['Country'].dropna().unique().tolist()
+selected_countries = st.sidebar.multiselect("Select Country", countries, default=countries)
+df = df[df['Country'].isin(selected_countries)]
 
-# Example filter: select a city/area if the column exists
-if 'Area' in df.columns:
-    area = st.sidebar.selectbox("Select Area", df['Area'].dropna().unique())
-    filtered_df = df[df['Area'] == area]
-else:
-    filtered_df = df
+# Region/City Filter
+if 'Region/City' in df.columns:
+    regions = df['Region/City'].dropna().unique().tolist()
+    selected_regions = st.sidebar.multiselect("Select Region/City", regions, default=regions)
+    df = df[df['Region/City'].isin(selected_regions)]
 
-# Show some stats
-st.subheader("Summary Statistics")
-st.write(filtered_df.describe(include='all'))
+# Vegetarian Filter
+if 'Vegetarian' in df.columns:
+    vegetarian_options = df['Vegetarian'].dropna().unique().tolist()
+    selected_type = st.sidebar.multiselect("Vegetarian?", vegetarian_options, default=vegetarian_options)
+    df = df[df['Vegetarian'].isin(selected_type)]
 
-# Plot example: pie chart of food types or vendors
-if 'Food Type' in df.columns:
-    st.subheader("Distribution of Food Types")
-    food_counts = filtered_df['Food Type'].value_counts()
-    st.pyplot(plt.figure(figsize=(6, 6)))
-    plt.pie(food_counts, labels=food_counts.index, autopct="%1.1f%%", startangle=140)
-    plt.axis('equal')
-    plt.title("Food Type Share")
+# If no data
+if df.empty:
+    st.warning("No data available for selected filters.")
+    st.stop()
 
-# Add more visualizations as needed
+# Preview data
+st.subheader("📋 Filtered Data Preview")
+st.dataframe(df, use_container_width=True)
 
-st.markdown("📊 More charts and filters can be added based on your dataset's columns.")
-# Bar chart for Vendor Count per Area (if available)
-if 'Area' in df.columns and 'Vendor Name' in df.columns:
-    st.subheader("Number of Vendors per Area")
-    vendor_counts = df.groupby('Area')['Vendor Name'].nunique().sort_values(ascending=False)
-    st.bar_chart(vendor_counts)
+# Summary
+st.subheader("📊 Summary Statistics")
+st.write(df[['Typical Price (USD)']].describe())
 
-# Bar chart of Average Price per Food Type (if price column exists)
-if 'Food Type' in df.columns and 'Price' in df.columns:
-    st.subheader("Average Price per Food Type")
-    avg_price = filtered_df.groupby('Food Type')['Price'].mean().sort_values()
-    st.bar_chart(avg_price)
-
-# Line chart for items sold per day (if there's a Date and Quantity column)
-if 'Date' in df.columns and 'Quantity Sold' in df.columns:
-    st.subheader("Quantity Sold Over Time")
-    df['Date'] = pd.to_datetime(df['Date'])
-    daily_sales = df.groupby('Date')['Quantity Sold'].sum()
-    st.line_chart(daily_sales)
-
-# Histogram of Prices
-if 'Price' in filtered_df.columns:
-    st.subheader("Price Distribution")
-    fig, ax = plt.subplots()
-    ax.hist(filtered_df['Price'].dropna(), bins=20, color='skyblue', edgecolor='black')
-    ax.set_xlabel("Price")
-    ax.set_ylabel("Frequency")
-    st.pyplot(fig)
 st.markdown("---")
-st.markdown("Made with ❤️ using Streamlit | By Aarya Kondawar")
+st.subheader("📈 Visualizations")
+
+# Column layout
+col1, col2 = st.columns(2)
+
+# Pie Chart: Vegetarian vs Non-Vegetarian
+with col1:
+    if 'Vegetarian' in df.columns:
+        st.markdown("### 🥗 Vegetarian vs Non-Vegetarian")
+        veg_counts = df['Vegetarian'].value_counts()
+        fig1, ax1 = plt.subplots()
+        ax1.pie(veg_counts, labels=veg_counts.index, autopct='%1.1f%%', startangle=140)
+        ax1.axis('equal')
+        st.pyplot(fig1)
+
+# Bar Chart: Average Price by Cooking Method
+with col2:
+    if 'Cooking Method' in df.columns and 'Typical Price (USD)' in df.columns:
+        st.markdown("### 🍳 Avg Price by Cooking Method")
+        avg_price = df.groupby('Cooking Method')['Typical Price (USD)'].mean().sort_values()
+        st.bar_chart(avg_price)
+
+# Bar Chart: Most Common Dishes by Region
+if 'Region/City' in df.columns:
+    st.markdown("### 🏙️ Dish Count by Region/City")
+    region_counts = df['Region/City'].value_counts().head(10)
+    st.bar_chart(region_counts)
+
+# Histogram: Price Distribution
+st.markdown("### 💸 Price Distribution")
+fig2, ax2 = plt.subplots()
+ax2.hist(df['Typical Price (USD)'].dropna(), bins=10, color='skyblue', edgecolor='black')
+ax2.set_xlabel("Price (USD)")
+ax2.set_ylabel("Frequency")
+st.pyplot(fig2)
+
+# Footer
+st.markdown("---")
+st.markdown("Built with ❤️ using Streamlit | by Aarya Kondawar")
