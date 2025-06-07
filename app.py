@@ -42,3 +42,32 @@ if 'Food Type' in df.columns:
 # Add more visualizations as needed
 
 st.markdown("📊 More charts and filters can be added based on your dataset's columns.")
+# Bar chart for Vendor Count per Area (if available)
+if 'Area' in df.columns and 'Vendor Name' in df.columns:
+    st.subheader("Number of Vendors per Area")
+    vendor_counts = df.groupby('Area')['Vendor Name'].nunique().sort_values(ascending=False)
+    st.bar_chart(vendor_counts)
+
+# Bar chart of Average Price per Food Type (if price column exists)
+if 'Food Type' in df.columns and 'Price' in df.columns:
+    st.subheader("Average Price per Food Type")
+    avg_price = filtered_df.groupby('Food Type')['Price'].mean().sort_values()
+    st.bar_chart(avg_price)
+
+# Line chart for items sold per day (if there's a Date and Quantity column)
+if 'Date' in df.columns and 'Quantity Sold' in df.columns:
+    st.subheader("Quantity Sold Over Time")
+    df['Date'] = pd.to_datetime(df['Date'])
+    daily_sales = df.groupby('Date')['Quantity Sold'].sum()
+    st.line_chart(daily_sales)
+
+# Histogram of Prices
+if 'Price' in filtered_df.columns:
+    st.subheader("Price Distribution")
+    fig, ax = plt.subplots()
+    ax.hist(filtered_df['Price'].dropna(), bins=20, color='skyblue', edgecolor='black')
+    ax.set_xlabel("Price")
+    ax.set_ylabel("Frequency")
+    st.pyplot(fig)
+st.markdown("---")
+st.markdown("Made with ❤️ using Streamlit | By Aarya Kondawar")
